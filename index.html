@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Flashlet — Simple Flashcards</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#7c3aed;--muted:#9aa4b2;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071028 0%, #07182a 60%); color:#e6eef6; display:flex; align-items:center; justify-content:center; padding:32px}
+    .app{width:980px; max-width:96vw}
+    header{display:flex; align-items:center; gap:16px; margin-bottom:18px}
+    header h1{margin:0; font-size:20px}
+    .topbar{display:flex; gap:8px; margin-left:auto; align-items:center}
+    .card-area{display:flex; gap:20px}
+    .card{width:540px; height:320px; border-radius:14px; background:linear-gradient(180deg,var(--card),#061225); padding:26px; box-shadow:0 8px 30px rgba(2,6,23,0.7); position:relative; perspective:1200px}
+    .flip{width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+    .flipped .flip{transform:rotateY(180deg)}
+    .face{position:absolute; inset:0; backface-visibility:hidden; display:flex; align-items:center; justify-content:center; padding:20px}
+    .front{font-size:34px; font-weight:700}
+    .back{transform:rotateY(180deg); font-size:18px; color:var(--muted)}
+    .controls{display:flex; gap:8px; margin-top:12px}
+    button{background:var(--glass); border:1px solid rgba(255,255,255,0.04); color:inherit; padding:10px 12px; border-radius:10px; cursor:pointer}
+    button.primary{background:linear-gradient(90deg,var(--accent),#4f46e5); color:white; border: none}
+    aside{flex:1; min-width:260px}
+    .panel{background:rgba(255,255,255,0.03); padding:14px; border-radius:12px}
+    .progress{margin-bottom:14px}
+    .list{max-height:260px; overflow:auto; margin-top:8px}
+    .list-item{display:flex; justify-content:space-between; padding:8px; border-radius:8px; margin-bottom:6px; background:rgba(255,255,255,0.01)}
+    .small{font-size:13px; color:var(--muted)}
+    .form-row{display:flex; gap:8px; margin-top:8px}
+    input, textarea{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit}
+    .controls-row{display:flex; gap:8px; margin-top:8px}
+    .muted{color:var(--muted)}
+    footer{margin-top:14px; font-size:13px; color:var(--muted)}
+    @media (max-width:900px){.card-area{flex-direction:column}.card{width:100%; height:280px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24'><rect rx='5' width='24' height='24' fill='%237c3aed'/><text x='50%' y='55%' font-size='12' fill='white' text-anchor='middle' font-family='sans-serif'>FL</text></svg>" alt="logo" style="border-radius:8px"/>
+      <h1>Flashlet — simple flashcards</h1>
+      <div class="topbar">
+        <div class="small muted" id="progressText">Loading...</div>
+        <button id="exportBtn">Export JSON</button>
+        <button id="importBtn">Import JSON</button>
+        <button id="resetBtn">Reset Known</button>
+      </div>
+    </header>
+
+    <main class="card-area">
+      <section>
+        <div class="card" id="card">
+          <div class="flip" id="flip">
+            <div class="face front" id="word">Word</div>
+            <div class="face back" id="definition">Definition</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="prevBtn">← Prev</button>
+          <button id="flipBtn" class="primary">Flip</button>
+          <button id="nextBtn">Next →</button>
+        </div>
+
+        <div class="controls-row">
+          <button id="markKnown">Mark as Known ✓</button>
+          <button id="markUnknown">Mark as Unknown ✕</button>
+          <button id="shuffleBtn">Shuffle</button>
+        </div>
+
+        <div class="muted small" style="margin-top:8px">Tip: press <strong>space</strong> to flip, <strong>k</strong> to mark known.</div>
+      </section>
+
+      <aside>
+        <div class="panel">
+          <div class="progress">
+            <strong>Progress</strong>
+            <div class="small" id="progressBar">—</div>
+          </div>
+
+          <div>
+            <strong>Add new card</strong>
+            <div class="form-row">
+              <input id="newWord" placeholder="Word (e.g. Photosynthesis)" />
+            </div>
+            <div class="form-row">
+              <textarea id="newDef" rows="3" placeholder="Definition"></textarea>
+            </div>
+            <div class="form-row">
+              <button id="addBtn" class="primary">Add card</button>
+              <button id="addToTop">Add to top</button>
+            </div>
+          </div>
+
+          <hr style="margin:12px 0; border:0; border-top:1px solid rgba(255,255,255,0.03)" />
+
+          <div>
+            <strong>All cards</strong>
+            <div class="list" id="cardsList"></div>
+          </div>
+        </div>
+
+        <footer>
+          You can also add cards manually by editing the <code>initialWords</code> array in the HTML file.
+        </footer>
+      </aside>
+    </main>
+  </div>
+
+  <input type="file" id="fileInput" style="display:none" accept="application/json" />
+
+  <script>
+    // ====== EDITABLE START: initial words ======
+    const initialWords = [
+      {word: 'Osmosis', def: 'Diffusion of water across a semipermeable membrane from low solute concentration to high.'},
+      {word: 'Mitochondria', def: 'Organelles that produce ATP through cellular respiration.'},
+      {word: 'Epoch', def: 'A subdivision of geologic time or in ML, a full pass through the training dataset.'},
+      {word: 'Synapse', def: 'The junction between two neurons where neurotransmitters are released.'},
+      {word: 'Allele', def: 'A variant form of a gene.'},
+      {word: 'Photosynthesis', def: 'Process where plants convert light energy into chemical energy (glucose).'},
+      {word: 'Quark', def: 'An elementary particle and a fundamental constituent of matter.'}
+    ];
+    // ====== EDITABLE END ======
+
+    // Storage keys
+    const STORAGE_KEY = 'flashlet_cards_v1';
+    const KNOWN_KEY = 'flashlet_known_v1';
+    // State
+    let cards = [];
+    let order = []; // indices left to show
+    let current = 0;
+    let knownSet = new Set();
+    const el = id => document.getElementById(id);
+
+    function load() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { cards = JSON.parse(saved); } catch(e) { cards = initialWords.slice(); }
+      } else {
+        cards = initialWords.slice();
+      }
+      const knownRaw = localStorage.getItem(KNOWN_KEY);
+      knownSet = new Set(knownRaw ? JSON.parse(knownRaw) : []);
+      rebuildOrder();
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+      localStorage.setItem(KNOWN_KEY, JSON.stringify(Array.from(knownSet)));
+    }
+
+    function rebuildOrder() {
+      order = cards.map((c,i)=>i).filter(i=>!knownSet.has(i));
+      if(order.length===0){ current = -1; showEmpty(); } else { current = Math.max(0, Math.min(current, order.length-1)); showCard(); }
+      updateList(); updateProgress();
+    }
+
+    function showEmpty(){ el('word').textContent = 'No cards to study — nice!'; el('definition').textContent = 'You have marked all cards as known. Reset known or add more cards.'; }
+
+    function showCard(){
+      if (current<0 || order.length===0) { showEmpty(); return; }
+      const idx = order[current];
+      el('word').textContent = cards[idx].word;
+      el('definition').textContent = cards[idx].def;
+      document.getElementById('card').classList.remove('flipped');
+      updateProgress();
+    }
+
+    function flip() { document.getElementById('card').classList.toggle('flipped'); }
+
+    function next() { if(order.length===0) return; current = (current+1)%order.length; showCard(); }
+    function prev() { if(order.length===0) return; current = (current-1+order.length)%order.length; showCard(); }
+
+    function markKnown() {
+      if(order.length===0) return;
+      const idx = order[current];
+      knownSet.add(idx);
+      save();
+      rebuildOrder();
+    }
+    function markUnknown() {
+      // remove from known set if present
+      if(order.length===0) return;
+      const idx = order[current];
+      if(knownSet.has(idx)) knownSet.delete(idx);
+      save();
+      rebuildOrder();
+    }
+
+    function shuffle() {
+      for(let i=order.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]] }
+      current=0; showCard();
+    }
+
+    function addCard(word, def, toTop=false){
+      if(!word || !def) return;
+      cards.push({word, def});
+      // new index is last
+      const newIndex = cards.length-1;
+      if(!knownSet.has(newIndex)){
+        if(toTop) order.unshift(newIndex); else order.push(newIndex);
+      }
+      save(); updateList(); updateProgress(); showCard();
+    }
+
+    function updateList(){
+      const list = el('cardsList'); list.innerHTML='';
+      cards.forEach((c,i)=>{
+        const div = document.createElement('div'); div.className='list-item';
+        const left = document.createElement('div'); left.innerHTML=`<strong>${c.word}</strong><div class='small muted'>${c.def.slice(0,80)}${c.def.length>80? '...' : ''}</div>`;
+        const right = document.createElement('div');
+        const btn = document.createElement('button'); btn.textContent = knownSet.has(i)?'Known ✓':'Mark known';
+        btn.onclick = ()=>{ if(knownSet.has(i)) { knownSet.delete(i) } else { knownSet.add(i) } save(); rebuildOrder(); };
+        const edit = document.createElement('button'); edit.textContent='Edit'; edit.onclick=()=>{ const nw = prompt('Edit word', c.word); if(nw!==null){ const nd = prompt('Edit definition', c.def); if(nd!==null){ cards[i]={word:nw,def:nd}; save(); rebuildOrder(); } } };
+        right.appendChild(btn); right.appendChild(edit);
+        div.appendChild(left); div.appendChild(right);
+        list.appendChild(div);
+      })
+    }
+
+    function updateProgress(){
+      const total = cards.length; const known = knownSet.size; const left = total-known;
+      el('progressText').textContent = `${left} to learn — ${known} known — total ${total}`;
+      el('progressBar').textContent = `${known} / ${total} known`;
+    }
+
+    // Export / Import
+    function exportJSON(){
+      const payload = {cards, known:Array.from(knownSet)};
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'flashlet_export.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    function importJSON(file){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        try{
+          const payload = JSON.parse(e.target.result);
+          if(Array.isArray(payload.cards)){
+            cards = payload.cards; knownSet = new Set(payload.known || []);
+            save(); rebuildOrder(); alert('Imported!');
+          } else alert('Invalid file');
+        }catch(err){ alert('Error reading JSON') }
+      }
+      reader.readAsText(file);
+    }
+
+    // Reset knowns (keeps cards)
+    function resetKnown(){ if(!confirm('Reset all known marks?')) return; knownSet.clear(); save(); rebuildOrder(); }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e=>{
+      if(e.code==='Space'){ e.preventDefault(); flip(); }
+      if(e.key==='k') markKnown();
+      if(e.key==='j') markUnknown();
+      if(e.key==='ArrowRight') next();
+      if(e.key==='ArrowLeft') prev();
+    });
+
+    // Hook up buttons
+    document.getElementById('flipBtn').onclick = flip;
+    document.getElementById('nextBtn').onclick = next;
+    document.getElementById('prevBtn').onclick = prev;
+    document.getElementById('markKnown').onclick = markKnown;
+    document.getElementById('markUnknown').onclick = markUnknown;
+    document.getElementById('shuffleBtn').onclick = ()=>{ shuffle(); updateList(); };
+    document.getElementById('addBtn').onclick = ()=>{ addCard(el('newWord').value.trim(), el('newDef').value.trim(), false); el('newWord').value=''; el('newDef').value=''; };
+    document.getElementById('addToTop').onclick = ()=>{ addCard(el('newWord').value.trim(), el('newDef').value.trim(), true); el('newWord').value=''; el('newDef').value=''; };
+    document.getElementById('exportBtn').onclick = exportJSON;
+    document.getElementById('importBtn').onclick = ()=> el('fileInput').click();
+    document.getElementById('resetBtn').onclick = resetKnown;
+    document.getElementById('fileInput').addEventListener('change', e=>{ if(e.target.files.length) importJSON(e.target.files[0]); e.target.value=''; });
+
+    // Init
+    load(); updateList();
+  </script>
+</body>
+</html>
