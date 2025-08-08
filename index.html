@@ -18,6 +18,10 @@
     .flipped .flip{transform:rotateY(180deg)}
     .face{position:absolute; inset:0; backface-visibility:hidden; display:flex; align-items:center; justify-content:center; padding:20px}
     .front{font-size:34px; font-weight:700}
+    /* FIX: hide front face content when flipped */
+    .flipped .front {
+      visibility: hidden;
+    }
     .back{transform:rotateY(180deg); font-size:18px; color:var(--muted)}
     .controls{display:flex; gap:8px; margin-top:12px}
     button{background:var(--glass); border:1px solid rgba(255,255,255,0.04); color:inherit; padding:10px 12px; border-radius:10px; cursor:pointer}
