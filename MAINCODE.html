@@ -1,125 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Flashcard App</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  h1 {
-    margin-bottom: 5px;
-  }
-  p {
-    margin-top: 0;
-    margin-bottom: 20px;
-  }
-  .flashcard {
-    background-color: white;
-    width: 300px;
-    height: 200px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: transform 0.3s;
-    text-align: center;
-    padding: 10px;
-  }
-  .flashcard.flipped {
-    background-color: #fafafa;
-    transform: rotateY(180deg);
-  }
-  .controls {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-  }
-  button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    background-color: #4CAF50;
-    color: white;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #45a049;
-  }
-</style>
+    <title>Flashcard App</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f8f9fa; }
+        .card { background: white; padding: 20px; margin: 50px auto; width: 300px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .known { background: #28a745; color: white; }
+        .flip { background: #007bff; color: white; }
+    </style>
 </head>
 <body>
-  <h1>SAT-Flashcard</h1>
-  <p>This is a word bank of SAT vocabulary words and you can learn it through a flashcard.</p>
-  <div class="flashcard" id="flashcard">Word</div>
-  <div class="controls">
-    <button id="knownBtn">Mark as Known</button>
-    <button id="nextBtn">Next</button>
-  </div>
-<script>
-  const flashcard = document.getElementById('flashcard');
-  const knownBtn = document.getElementById('knownBtn');
-  const nextBtn = document.getElementById('nextBtn');
+    <div class="card">
+        <h2 id="word"></h2>
+        <p id="definition" style="display:none;"></p>
+        <button class="flip" onclick="flipCard()">Flip</button>
+        <button class="known" onclick="markAsKnown()">Mark as Known</button>
+    </div>
 
-  let cards = [
-    { word: 'Abate', definition: 'To lessen or reduce in degree or intensity.' },
-    { word: 'Benevolent', definition: 'Well meaning and kindly.' },
-    { word: 'Cacophony', definition: 'A harsh, discordant mixture of sounds.' }
-    // Add all SAT words here...
-  ];
+    <script>
+        let cards = [
+            {word: 'Abate', definition: 'to lessen in intensity or degree'},
+            {word: 'Benevolent', definition: 'well meaning and kindly'},
+            {word: 'Cacophony', definition: 'a harsh, discordant mixture of sounds'}
+        ];
 
-  let currentIndex = 0;
-  let showDefinition = false;
-  let knownCards = new Set();
+        let currentIndex = 0;
+        let knownCards = new Set();
 
-  function updateCard() {
-    const currentCard = cards[currentIndex];
-    flashcard.textContent = showDefinition ? currentCard.definition : currentCard.word;
-  }
+        function showCard() {
+            if (cards.length === 0) {
+                document.getElementById('word').textContent = 'No cards available';
+                document.getElementById('definition').style.display = 'none';
+                return;
+            }
+            let availableCards = cards.filter((_, index) => !knownCards.has(index));
+            if (availableCards.length === 0) {
+                document.getElementById('word').textContent = 'All cards known!';
+                document.getElementById('definition').style.display = 'none';
+                return;
+            }
+            currentIndex = cards.indexOf(availableCards[0]);
+            document.getElementById('word').textContent = cards[currentIndex].word;
+            document.getElementById('definition').textContent = cards[currentIndex].definition;
+            document.getElementById('definition').style.display = 'none';
+        }
 
-  flashcard.addEventListener('click', () => {
-    showDefinition = !showDefinition;
-    updateCard();
-  });
+        function flipCard() {
+            let def = document.getElementById('definition');
+            def.style.display = def.style.display === 'none' ? 'block' : 'none';
+        }
 
-  knownBtn.addEventListener('click', () => {
-    knownCards.add(currentIndex);
-    nextCard();
-  });
+        function markAsKnown() {
+            knownCards.add(currentIndex);
+            showCard();
+        }
 
-  nextBtn.addEventListener('click', () => {
-    nextCard();
-  });
-
-  function nextCard() {
-    let found = false;
-    for (let i = 1; i <= cards.length; i++) {
-      const nextIndex = (currentIndex + i) % cards.length;
-      if (!knownCards.has(nextIndex)) {
-        currentIndex = nextIndex;
-        found = true;
-        break;
-      }
-    }
-    showDefinition = false;
-    if (!found) {
-      flashcard.textContent = 'All cards known!';
-    } else {
-      updateCard();
-    }
-  }
-
-  updateCard();
-</script>
+        showCard();
+    </script>
 </body>
 </html>
