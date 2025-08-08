@@ -8,11 +8,18 @@
   body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 5px;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 20px;
   }
   .flashcard {
     background-color: white;
@@ -25,6 +32,8 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     cursor: pointer;
     transition: transform 0.3s;
+    text-align: center;
+    padding: 10px;
   }
   .flashcard.flipped {
     background-color: #fafafa;
@@ -50,6 +59,8 @@
 </style>
 </head>
 <body>
+  <h1>SAT-Flashcard</h1>
+  <p>This is a word bank of SAT vocabulary words and you can learn it through a flashcard.</p>
   <div class="flashcard" id="flashcard">Word</div>
   <div class="controls">
     <button id="knownBtn">Mark as Known</button>
@@ -61,9 +72,10 @@
   const nextBtn = document.getElementById('nextBtn');
 
   let cards = [
-    { word: 'Biology', definition: 'The study of living organisms.' },
-    { word: 'Neuron', definition: 'A nerve cell that transmits information.' },
-    { word: 'Osmosis', definition: 'The diffusion of water through a semipermeable membrane.' }
+    { word: 'Abate', definition: 'To lessen or reduce in degree or intensity.' },
+    { word: 'Benevolent', definition: 'Well meaning and kindly.' },
+    { word: 'Cacophony', definition: 'A harsh, discordant mixture of sounds.' }
+    // Add all SAT words here...
   ];
 
   let currentIndex = 0;
@@ -111,4 +123,3 @@
 </script>
 </body>
 </html>
-
