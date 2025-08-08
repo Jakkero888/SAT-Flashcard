@@ -1,85 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcards</title>
-  <style>
-    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f0f0; margin: 0; }
-    .flashcard { width: 300px; height: 200px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.2em; cursor: pointer; user-select: none; text-align: center; padding: 20px; }
-    .controls { margin-top: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; background: #007BFF; color: white; font-size: 1em; }
-    button:disabled { background: gray; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flashcard App</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .flashcard {
+    background-color: white;
+    width: 300px;
+    height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  .flashcard.flipped {
+    background-color: #fafafa;
+    transform: rotateY(180deg);
+  }
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #45a049;
+  }
+</style>
 </head>
 <body>
-  <div class="flashcard" id="flashcard"></div>
+  <div class="flashcard" id="flashcard">Word</div>
   <div class="controls">
     <button id="knownBtn">Mark as Known</button>
     <button id="nextBtn">Next</button>
   </div>
+<script>
+  const flashcard = document.getElementById('flashcard');
+  const knownBtn = document.getElementById('knownBtn');
+  const nextBtn = document.getElementById('nextBtn');
 
-  <script>
-    const cards = [
-      { word: "aberration", definition: "a departure from what is normal, usual, or expected" },
-      { word: "capitulate", definition: "cease to resist an opponent; surrender" },
-      { word: "deleterious", definition: "causing harm or damage" },
-      { word: "enervate", definition: "cause (someone) to feel drained of energy" },
-      { word: "fortuitous", definition: "happening by chance rather than intention" },
-      { word: "gregarious", definition: "fond of company; sociable" },
-      { word: "harangue", definition: "a lengthy and aggressive speech" },
-      { word: "intransigent", definition: "unwilling to change one's views" },
-      { word: "juxtapose", definition: "place close together for contrasting effect" },
-      { word: "laconic", definition: "using very few words" }
-    ];
+  let cards = [
+    { word: 'Biology', definition: 'The study of living organisms.' },
+    { word: 'Neuron', definition: 'A nerve cell that transmits information.' },
+    { word: 'Osmosis', definition: 'The diffusion of water through a semipermeable membrane.' }
+  ];
 
-    let knownWords = new Set();
-    let currentIndex = 0;
-    let showingDefinition = false;
+  let currentIndex = 0;
+  let showDefinition = false;
+  let knownCards = new Set();
 
-    const flashcardEl = document.getElementById('flashcard');
-    const knownBtn = document.getElementById('knownBtn');
-    const nextBtn = document.getElementById('nextBtn');
+  function updateCard() {
+    const currentCard = cards[currentIndex];
+    flashcard.textContent = showDefinition ? currentCard.definition : currentCard.word;
+  }
 
-    function getNextCard() {
-      const remaining = cards.filter(card => !knownWords.has(card.word));
-      if (remaining.length === 0) {
-        flashcardEl.textContent = "🎉 You've learned all the words!";
-        knownBtn.disabled = true;
-        nextBtn.disabled = true;
-        return null;
+  flashcard.addEventListener('click', () => {
+    showDefinition = !showDefinition;
+    updateCard();
+  });
+
+  knownBtn.addEventListener('click', () => {
+    knownCards.add(currentIndex);
+    nextCard();
+  });
+
+  nextBtn.addEventListener('click', () => {
+    nextCard();
+  });
+
+  function nextCard() {
+    let found = false;
+    for (let i = 1; i <= cards.length; i++) {
+      const nextIndex = (currentIndex + i) % cards.length;
+      if (!knownCards.has(nextIndex)) {
+        currentIndex = nextIndex;
+        found = true;
+        break;
       }
-      currentIndex = Math.floor(Math.random() * remaining.length);
-      showingDefinition = false;
-      flashcardEl.textContent = remaining[currentIndex].word;
-      return remaining[currentIndex];
     }
+    showDefinition = false;
+    if (!found) {
+      flashcard.textContent = 'All cards known!';
+    } else {
+      updateCard();
+    }
+  }
 
-    flashcardEl.addEventListener('click', () => {
-      const remaining = cards.filter(card => !knownWords.has(card.word));
-      if (remaining.length > 0) {
-        if (showingDefinition) {
-          flashcardEl.textContent = remaining[currentIndex].word;
-        } else {
-          flashcardEl.textContent = remaining[currentIndex].definition;
-        }
-        showingDefinition = !showingDefinition;
-      }
-    });
-
-    knownBtn.addEventListener('click', () => {
-      const remaining = cards.filter(card => !knownWords.has(card.word));
-      if (remaining.length > 0) {
-        knownWords.add(remaining[currentIndex].word);
-        getNextCard();
-      }
-    });
-
-    nextBtn.addEventListener('click', () => {
-      getNextCard();
-    });
-
-    getNextCard();
-  </script>
+  updateCard();
+</script>
 </body>
 </html>
+
